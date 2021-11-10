@@ -25,7 +25,7 @@ SIMFLAGS=-D_SIMULATE_
 # Place the section past the end of reachable memory
 MMCUSECTION=-Wl,--undefined=_mmcu,--section-start=.mmcu=910000 
 FLAGS=-Wall -mmcu=$(MMCU) $(MMCUSECTION)
-INCLUDES=-I./$(PATHH) -I$(SIMAVRDIR)
+INCLUDES=-I./$(PATHH) -I$(SIMAVRDIR) -I/usr/lib/avr/include/avr
 OBJCOPY=avr-objcopy
 OBJFLAGS=-j .text -j .data -O ihex
 # Debugger
