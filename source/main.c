@@ -1,19 +1,7 @@
-/*	Author: emerson
- *  Partner(s) Name: 
- *	Lab Section:
- *	Assignment: Lab #  Exercise #
- *	Exercise Description: [optional - include for your own benefit]
- *
- *	I acknowledge all content contained herein, excluding template or example
- *	code, is my own original work.
- */
 #include <avr/io.h>
 #include "../header/interrupt.h"
 #include "../header/spi.h"
 #include "../header/nokia.h"
-#ifdef _SIMULATE_
-#include "simAVRHeader.h"
-#endif
 
 typedef struct task {
     int state;
@@ -22,26 +10,53 @@ typedef struct task {
     int (*TickFct)(int);
 } task_t;
 
-#define NUM_TASKS 2
+#define NUM_TASKS 1
 task_t tasks[NUM_TASKS];
 
 volatile unsigned char TimerFlag = 0;
 const unsigned long timerPeriod = 10;
 
-
-unsigned char on = 0x00;
 void TimerISR() {
-    // unsigned char i;
-    // for(i=0; i<NUM_TASKS; ++i) {
-    //     if (tasks[i].elapsedTime >= tasks[i].period) {
-    //         tasks[i].state = tasks[i].TickFct(tasks[i].state);
-    //         tasks[i].elapsedTime = 0;
-    //     }
-    //     tasks[i].elapsedTime += timerPeriod;
-    // }
+    unsigned char i;
+    for(i=0; i<NUM_TASKS; ++i) {
+        if (tasks[i].elapsedTime >= tasks[i].period) {
+            tasks[i].state = tasks[i].TickFct(tasks[i].state);
+            tasks[i].elapsedTime = 0;
+        }
+        tasks[i].elapsedTime += timerPeriod;
+    }
 }
 
-menu_t current_menu = { "Menu          ", "Row1", "Row2", "Row3", "Row4", "Row5", 1 };
+menu_t current_menu = { "Menu          ", 4, { "Row1", "Row2", "Row3", "Row4"}, 1 };
+
+enum PG_States { PG_Start, PG_StepON } PG_State;
+
+int PG_Tick(int state) {
+    // Transition
+    switch(state) {
+        case PG_Start:
+            state = PG_StepON;
+            PORTA = SetBit(PORTA, 0, 0);
+            break;
+        case PG_StepON:
+            state = PG_StepON;
+            break;
+    }
+
+    // Actions
+    switch(state) {
+        case PG_Start:
+            break;
+        case PG_StepON:
+            PORTA = SetBit(PORTA, 1, 1);
+            PORTA = SetBit(PORTA, 1, 0);
+            // Screen_DisplayMenu(current_menu);
+            // current_menu.selected_row = current_menu.selected_row + 1;
+            // if (current_menu.selected_row == current_menu.num_rows + 1) current_menu.selected_row = 1;
+            break;
+    }
+    return state;
+}
 
 int main(void) {
     // Outputs
@@ -51,11 +66,11 @@ int main(void) {
     // Inputs
     // DDRA = 0x00; PORTA = 0xFF;
 
-    // unsigned char i = 0;
-    // tasks[i].state = ;
-    // tasks[i].period = ;
-    // tasks[i].elapsedTime = 0;
-    // tasks[i].TickFct = &;
+    unsigned char i = 0;
+    tasks[i].state = PG_Start;
+    tasks[i].period = 10;
+    tasks[i].elapsedTime = 0;
+    tasks[i].TickFct = &PG_Tick;
 
     // Enable SPI
     SPI_MasterInit();
@@ -64,10 +79,8 @@ int main(void) {
     Screen_Init();
 
     // Enable Interrupt for Task Scheduler
-    TimerSet(1000);
+    TimerSet(timerPeriod);
     TimerOn();
-
-    Screen_DisplayMenu(current_menu);
 
     while (1) {}
     return 1;
