@@ -24,4 +24,14 @@ unsigned char GetBit(unsigned char port, unsigned char number)
 	return ( port & (0x01 << number) );
 }
 
+void delay_ms(int miliSec) //for 8 Mhz crystal
+{
+    int i,j;
+    for(i=0;i<miliSec;i++) {
+        for(j=0;j<775;j++) {
+            asm("nop");
+        }
+    }
+}
+
 #endif

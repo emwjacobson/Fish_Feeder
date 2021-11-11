@@ -12,7 +12,7 @@ void SPI_Transmit(unsigned char data) {
     // Put data on the SPI Data Register
     SPDR = data;
 
-    while (!(SPSR & (1 << SPIF))) {};
+    while (!(SPSR & (1 << SPIF))) { asm("nop"); };
 }
 
 #endif

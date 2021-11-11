@@ -20,10 +20,10 @@ typedef struct task {
     unsigned long period;
     unsigned long elapsedTime;
     int (*TickFct)(int);
-} task;
+} task_t;
 
 #define NUM_TASKS 2
-task tasks[NUM_TASKS];
+task_t tasks[NUM_TASKS];
 
 volatile unsigned char TimerFlag = 0;
 const unsigned long timerPeriod = 10;
@@ -39,18 +39,9 @@ void TimerISR() {
     //     }
     //     tasks[i].elapsedTime += timerPeriod;
     // }
-    Screen_Test();
-    PORTA = SetBit(PORTA, 0, 1);
 }
 
-// B0   UNUSED 
-// B1   RESET
-// B2   CE
-// B3   DC
-// B4   UNUSED
-// B5   DIN (SPI MOSI)
-// B6   UNUSED
-// B7   CLK (SPI SCK)
+menu_t current_menu = { "Menu          ", "Row1", "Row2", "Row3", "Row4", "Row5", 1 };
 
 int main(void) {
     // Outputs
@@ -59,6 +50,7 @@ int main(void) {
 
     // Inputs
     // DDRA = 0x00; PORTA = 0xFF;
+
     // unsigned char i = 0;
     // tasks[i].state = ;
     // tasks[i].period = ;
@@ -74,6 +66,8 @@ int main(void) {
     // Enable Interrupt for Task Scheduler
     TimerSet(1000);
     TimerOn();
+
+    Screen_DisplayMenu(current_menu);
 
     while (1) {}
     return 1;
