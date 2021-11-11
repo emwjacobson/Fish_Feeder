@@ -105,13 +105,21 @@ unsigned char charset[][5] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00 }   // 7f
 };
 
+// typedef struct menu {
+//     char title[16];
+//     unsigned char num_rows;
+//     char row1[16];
+//     char row2[16];
+//     char row3[16];
+//     char row4[16];
+//     char row5[16];
+//     unsigned char selected_row;
+// } menu_t;
+
 typedef struct menu {
     char title[16];
-    char row1[16];
-    char row2[16];
-    char row3[16];
-    char row4[16];
-    char row5[16];
+    unsigned char num_rows;
+    char row[5][16];
     unsigned char selected_row;
 } menu_t;
 
@@ -208,16 +216,20 @@ void Screen_SendData(unsigned char type, unsigned char data) {
 void Screen_DisplayMenu(menu_t menu) {
     Screen_SetCursor(0,0);
     Screen_WriteString(menu.title, 1, 0);
-    Screen_SetCursor(0, 1);
-    Screen_WriteString(menu.row1, 0, menu.selected_row == 1 ? 1 : 0);
-    Screen_SetCursor(0, 2);
-    Screen_WriteString(menu.row2, 0, menu.selected_row == 2 ? 1 : 0);
-    Screen_SetCursor(0, 3);
-    Screen_WriteString(menu.row3, 0, menu.selected_row == 3 ? 1 : 0);
-    Screen_SetCursor(0, 4);
-    Screen_WriteString(menu.row4, 0, menu.selected_row == 4 ? 1 : 0);
-    Screen_SetCursor(0, 5);
-    Screen_WriteString(menu.row5, 0, menu.selected_row == 5 ? 1 : 0);
+    for(int i=1; i<=menu.num_rows; i++){
+        Screen_SetCursor(0, i);
+        Screen_WriteString(menu.row[i-1], 0, menu.selected_row == i ? 1 : 0);
+    }
+    // Screen_SetCursor(0, 1);
+    // Screen_WriteString(menu.row1, 0, menu.selected_row == 1 ? 1 : 0);
+    // Screen_SetCursor(0, 2);
+    // Screen_WriteString(menu.row2, 0, menu.selected_row == 2 ? 1 : 0);
+    // Screen_SetCursor(0, 3);
+    // Screen_WriteString(menu.row3, 0, menu.selected_row == 3 ? 1 : 0);
+    // Screen_SetCursor(0, 4);
+    // Screen_WriteString(menu.row4, 0, menu.selected_row == 4 ? 1 : 0);
+    // Screen_SetCursor(0, 5);
+    // Screen_WriteString(menu.row5, 0, menu.selected_row == 5 ? 1 : 0);
 }
 
 #endif
