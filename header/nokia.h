@@ -138,6 +138,7 @@ void Screen_WriteString(char* str, unsigned char underline, unsigned char invert
 // B5   DIN (SPI MOSI)
 // B6   UNUSED
 // B7   CLK (SPI SCK)
+#define SCN_PORT PORTB
 #define SCN_RESET   1
 #define SCN_CE      2
 #define SCN_DC      3
@@ -145,11 +146,12 @@ void Screen_WriteString(char* str, unsigned char underline, unsigned char invert
 #define SCN_DATA    1
 #define SCN_COMMAND 0
 
+
 void Screen_Init() {
     // Reset screen
-    PORTB = SetBit(PORTB, SCN_RESET, 0);
+    SCN_PORT = SetBit(SCN_PORT, SCN_RESET, 0);
     delay_ms(250);
-    PORTB = SetBit(PORTB, SCN_RESET, 1);
+    SCN_PORT = SetBit(SCN_PORT, SCN_RESET, 1);
 
     // Set some settings
     Screen_SendData(SCN_COMMAND, 0x21); // Set H=1
@@ -201,16 +203,16 @@ unsigned char* Screen_GetChar(unsigned char c) {
 
 void Screen_SendData(unsigned char type, unsigned char data) {
     // Set it to either data or command mode
-    PORTB = SetBit(PORTB, SCN_DC, type);
+    SCN_PORT = SetBit(SCN_PORT, SCN_DC, type);
 
     // Enable clocking for screen
-    PORTB = SetBit(PORTB, SCN_CE, 0);
+    SCN_PORT = SetBit(SCN_PORT, SCN_CE, 0);
 
     // Transmit data
     SPI_Transmit(data);
 
     // Disable clocking
-    PORTB = SetBit(PORTB, SCN_CE, 1);
+    SCN_PORT = SetBit(SCN_PORT, SCN_CE, 1);
 }
 
 void Screen_DisplayMenu(menu_t menu) {
@@ -220,16 +222,6 @@ void Screen_DisplayMenu(menu_t menu) {
         Screen_SetCursor(0, i);
         Screen_WriteString(menu.row[i-1], 0, menu.selected_row == i ? 1 : 0);
     }
-    // Screen_SetCursor(0, 1);
-    // Screen_WriteString(menu.row1, 0, menu.selected_row == 1 ? 1 : 0);
-    // Screen_SetCursor(0, 2);
-    // Screen_WriteString(menu.row2, 0, menu.selected_row == 2 ? 1 : 0);
-    // Screen_SetCursor(0, 3);
-    // Screen_WriteString(menu.row3, 0, menu.selected_row == 3 ? 1 : 0);
-    // Screen_SetCursor(0, 4);
-    // Screen_WriteString(menu.row4, 0, menu.selected_row == 4 ? 1 : 0);
-    // Screen_SetCursor(0, 5);
-    // Screen_WriteString(menu.row5, 0, menu.selected_row == 5 ? 1 : 0);
 }
 
 #endif

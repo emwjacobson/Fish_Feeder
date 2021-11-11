@@ -35,6 +35,12 @@ unsigned char stepper_on = 0x00;
 menu_t current_menu = { "Menu          ", 4, { "Row1", "Row2", "Row3", "Row4"}, 1 };
 // ====== SHARED VARIABLES ======
 
+
+// ====== Stepper Controller ======
+//  Role: Make the stepper step if the `stepper_on` variable resolves to True
+//  Inputs: stepper_on
+//  Outputs: 
+// ====== Screen Controller ======
 enum ST_States { ST_Start, ST_Main } ST_State;
 
 int ST_Tick(int state) {
@@ -61,6 +67,11 @@ int ST_Tick(int state) {
 }
 
 
+// ====== Screen Controller ======
+//  Role: Display current menu from the `current_menu` variable
+//  Inputs: current_menu
+//  Outputs: 
+// ====== Screen Controller ======
 enum SC_States { SC_Start, SC_Display } SC_State;
 
 int SC_Tick(int state) {
@@ -88,7 +99,6 @@ int SC_Tick(int state) {
 
 
 // Playground Machine
-
 enum PG_States { PG_Start, PG_Main } PG_State;
 
 int PG_Tick(int state) {
@@ -125,6 +135,9 @@ int main(void) {
 
     // Enable Nokia Screen
     Screen_Init();
+
+    // Enable Stepper
+    Stepper_Init();
 
     // Enable Interrupt for Task Scheduler
     TimerSet(timerPeriod);

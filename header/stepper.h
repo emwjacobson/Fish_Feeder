@@ -5,27 +5,27 @@
 #include <util/delay.h>
 #include "../header/utils.h"
 
+#define ST_PORT PORTA
+#define ST_DIR_PIN 0
+#define ST_STEP_PIN 1
+
 #define DIR_OUT 0
 #define DIR_IN 1
 
-// PORTA = SetBit(PORTA, 0, 0);
-// PORTA = SetBit(PORTA, 1, 1);
-// PORTA = SetBit(PORTA, 1, 0);
-
 void Stepper_Init() {
-    PORTA = SetBit(PORTA, 0, DIR_OUT);
+    ST_PORT = SetBit(ST_PORT, ST_DIR_PIN, DIR_OUT);
 }
 
 void Stepper_Step() {
-    PORTA = SetBit(PORTA, 1, 1);
+    ST_PORT = SetBit(ST_PORT, ST_STEP_PIN, 1);
     _delay_us(10);
-    PORTA = SetBit(PORTA, 1, 0);
+    ST_PORT = SetBit(ST_PORT, ST_STEP_PIN, 0);
 }
 
 // 1 = DIR_IN
 // 0 = DIR_OUT
 void Stepper_SetDirection(int dir) {
-    PORTA = SetBit(PORTA , 0, dir);
+    ST_PORT = SetBit(ST_PORT , ST_DIR_PIN, dir);
 }
 
 #endif
