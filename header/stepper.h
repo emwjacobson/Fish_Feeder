@@ -17,8 +17,8 @@ void Stepper_Init() {
 }
 
 void Stepper_Step() {
+    // Toggle the bit to 1
     ST_PORT = SetBit(ST_PORT, ST_STEP_PIN, 1);
-    _delay_us(10);
     ST_PORT = SetBit(ST_PORT, ST_STEP_PIN, 0);
 }
 

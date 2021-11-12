@@ -37,7 +37,7 @@ menu_t current_menu = { "Menu          ", 4, { "Row1", "Row2", "Row3", "Row4"}, 
 
 
 // ====== Stepper Controller ======
-//  Role: Make the stepper step if the `stepper_on` variable resolves to True
+//  Roles: Make the stepper step if the `stepper_on` variable resolves to True
 //  Inputs: stepper_on
 //  Outputs: 
 // ====== Screen Controller ======
@@ -68,7 +68,7 @@ int ST_Tick(int state) {
 
 
 // ====== Screen Controller ======
-//  Role: Display current menu from the `current_menu` variable
+//  Roles: Display current menu from the `current_menu` variable
 //  Inputs: current_menu
 //  Outputs: 
 // ====== Screen Controller ======
@@ -98,7 +98,9 @@ int SC_Tick(int state) {
 }
 
 
-// Playground Machine
+// ====== Playground Machine ======
+//  Roles: I just test stuff here
+// ====== Playground Machine ======
 enum PG_States { PG_Start, PG_Main } PG_State;
 
 int PG_Tick(int state) {
@@ -114,6 +116,7 @@ int main(void) {
     // Inputs
     // DDRA = 0x00; PORTA = 0xFF;
 
+    // Setup all of the SMs
     unsigned char i = 0;
     tasks[i].state = ST_Start;
     tasks[i].period = 10;
