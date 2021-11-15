@@ -59,7 +59,12 @@ int ST_Tick(int state) {
         case ST_Start:
             break;
         case ST_Main:
-            if (stepper_on) Stepper_Step();
+            if (stepper_on) {
+                Stepper_Enable();
+                Stepper_Step();
+            } else {
+                Stepper_Disable();
+            }
             break;
     }
 
@@ -90,8 +95,6 @@ int SC_Tick(int state) {
             break;
         case SC_Display:
             Screen_DisplayMenu(current_menu);
-            current_menu.selected_row++;
-            if (current_menu.selected_row == current_menu.num_rows+1) current_menu.selected_row = 1;
             break;
     }
     return state;
@@ -101,25 +104,65 @@ int SC_Tick(int state) {
 // ====== Playground Machine ======
 //  Roles: I just test stuff here
 // ====== Playground Machine ======
-enum PG_States { PG_Start, PG_Main } PG_State;
+enum PG_States { PG_Start, PG_IDLE, PG_SPIN } PG_State;
 
 int PG_Tick(int state) {
-    stepper_on = ~stepper_on;
+    static unsigned char counter;
+    unsigned char btn_up = GetBit(~PINA, 3);
+    unsigned char btn_down = GetBit(~PINA, 4);
+    // unsigned char btn_select = GetBit(~PINA, 5);
+    switch(state) {
+        case PG_Start:
+            state = PG_IDLE;
+            break;
+        case PG_IDLE:
+            if (btn_up) {
+                Stepper_SetDirection(DIR_OUT);
+                counter = 0;
+                state = PG_SPIN;
+            } else if (btn_down) {
+                Stepper_SetDirection(DIR_IN);
+                counter = 0;
+                state = PG_SPIN;
+            }
+            break;
+        case PG_SPIN:
+            if (counter >= 50) {
+                state = PG_IDLE;
+            }
+            break;
+    }
+
+    switch(state) {
+        case PG_Start:
+            break;
+        case PG_IDLE:
+            stepper_on = 0x00;
+            break;
+        case PG_SPIN:
+            counter++;
+            stepper_on = 0x01;
+            break;
+    }
+
+    current_menu.selected_row++;
+    if (current_menu.selected_row == current_menu.num_rows+1) current_menu.selected_row = 1;
+
     return state;
 }
 
 int main(void) {
     // Outputs
     DDRB = 0xFF; PORTB = 0x00;
-    DDRA = 0xFF; PORTA = 0x00;
 
-    // Inputs
-    // DDRA = 0x00; PORTA = 0xFF;
+    // Mixed
+    // 0000_0111        1111_1000
+    DDRA = 0x07; PORTA = 0xF8;
 
     // Setup all of the SMs
     unsigned char i = 0;
     tasks[i].state = ST_Start;
-    tasks[i].period = 10;
+    tasks[i].period = 20;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &ST_Tick;
     i++;
@@ -129,7 +172,7 @@ int main(void) {
     tasks[i].TickFct = &SC_Tick;
     i++;
     tasks[i].state = PG_Start;
-    tasks[i].period = 1000;
+    tasks[i].period = 50;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &PG_Tick;
 
