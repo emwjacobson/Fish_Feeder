@@ -82,6 +82,7 @@ disableJTAG:
 
 program: $(PATHB)main.hex
 	$(PROGRAM) -c $(PROGRAMMER) -p $(MMCU) $(VERBOSITY) -U $(MEMORY):w:$< #|| $(ADDVERBOSITY)
+	avr-size -C --mcu=$(MMCU) $(PATHO)main.elf
 
 debug: $(PATHO)main.elf
 	@sed -i "s/break main.c:.*/break main.c:$(WHILELINENO)/" $(INITGDBDEBUGGER)
