@@ -1,5 +1,6 @@
 #define F_CPU 8000000
 
+#include <stdlib.h>
 #include <avr/io.h>
 #include "../header/interrupt.h"
 #include "../header/spi.h"
@@ -7,7 +8,7 @@
 #include "../header/stepper.h"
 #include "../header/adc.h"
 
-#define JOYSTICK_DEADZONE 250
+#define JOYSTICK_DEADZONE 400
 
 typedef struct task {
     int state;
@@ -121,6 +122,7 @@ int Joystick_Tick(int state) {
     unsigned short x = ADC_ReadChannel(3);
     unsigned short y = ADC_ReadChannel(4);
     unsigned char btn = GetBit(~PINA, 5);
+
     // Traitions
     switch(state) {
         case Joystick_Start:
@@ -138,8 +140,8 @@ int Joystick_Tick(int state) {
         case Joystick_Read:
             btn_select = btn;
             
-            btn_up = (x > 512 + JOYSTICK_DEADZONE);
-            btn_down = (x < 512 - JOYSTICK_DEADZONE);
+            btn_down = (x > 512 + JOYSTICK_DEADZONE);
+            btn_up = (x < 512 - JOYSTICK_DEADZONE);
             btn_left = (y > 512 + JOYSTICK_DEADZONE);
             btn_right = (y < 512 - JOYSTICK_DEADZONE);
             break;
@@ -147,28 +149,62 @@ int Joystick_Tick(int state) {
     return state;
 }
 
-// ====== Playground Machine ======
-//  Roles: I just test stuff here
-// ====== Playground Machine ======
-enum PG_States { Playground_Start, Playground_Idle, Playground_Spin } Playground_State;
+// ====== Menu Machine ======
+//  Roles: This is how we interact with the menu using the outputs from the Joystick SM
+//  Inputs: btn_up btn_down btn_left btn_right btn_select
+//  Outputs: 
+// ====== Menu Machine ======
+enum Menu_States { Menu_Start, Menu_Idle, Menu_Left, Menu_Right, Menu_Up, Menu_Down } Menu_State;
 
-int Playground_Tick(int state) {
+int Menu_Tick(int state) {
+    // Transition
     switch(state) {
-        case Playground_Start:
-            state = Playground_Idle;
+        case Menu_Start:
+            state = Menu_Idle;
             break;
-        case Playground_Idle:
+        case Menu_Idle:
+            if (btn_left && !btn_right && !btn_up && !btn_down) {
+                state = Menu_Left;
+            } else if (!btn_left && btn_right && !btn_up && !btn_down) {
+                state = Menu_Right;
+            } else if (!btn_left && !btn_right && btn_up && !btn_down) {
+                current_menu.selected_row--;
+                if (current_menu.selected_row == 0) current_menu.selected_row = current_menu.num_rows;
+                state = Menu_Up;
+            } else if (!btn_left && !btn_right && !btn_up && btn_down) {
+                current_menu.selected_row++;
+                if (current_menu.selected_row == current_menu.num_rows+1) current_menu.selected_row = 1;
+                state = Menu_Down;
+            }
             break;
-        case Playground_Spin:
+        case Menu_Left:
+            state = btn_left ? Menu_Left : Menu_Idle;
+            break;
+        case Menu_Right:
+            state = btn_right ? Menu_Right : Menu_Idle;
+            break;
+        case Menu_Up:
+            state = btn_up ? Menu_Up : Menu_Idle;
+            break;
+        case Menu_Down:
+            state = btn_down ? Menu_Down : Menu_Idle;
             break;
     }
 
+    // Actions
     switch(state) {
-        case Playground_Start:
+        case Menu_Start:
+            state = Menu_Idle;
             break;
-        case Playground_Idle:
+        case Menu_Idle:
             break;
-        case Playground_Spin:
+        case Menu_Left:
+            break;
+        case Menu_Right:
+            break;
+        case Menu_Up:
+            break;
+        case Menu_Down:
             break;
     }
 
@@ -203,10 +239,10 @@ int main(void) {
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &Joystick_Tick;
     i++;
-    tasks[i].state = Playground_Start;
+    tasks[i].state = Menu_Start;
     tasks[i].period = 50;
     tasks[i].elapsedTime = 0;
-    tasks[i].TickFct = &Playground_Tick;
+    tasks[i].TickFct = &Menu_Tick;
 
     // Enable SPI
     SPI_MasterInit();
@@ -220,8 +256,8 @@ int main(void) {
     // Enable ADC
     ADC_Init();
 
-    Screen_WriteString("Pogg", 0, 0);
-    delay_ms(1000);
+    Screen_WriteString(" Feesh Feeder ", 1, 0);
+    delay_ms(2000);
 
     // Enable Interrupt for Task Scheduler
     TimerSet(timerPeriod);

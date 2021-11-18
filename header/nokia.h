@@ -216,7 +216,7 @@ void Screen_SendData(unsigned char type, unsigned char data) {
 }
 
 void Screen_DisplayMenu(menu_t menu) {
-    Screen_SetCursor(0,0);
+    Screen_Clear();
     Screen_WriteString(menu.title, 1, 0);
     for(int i=1; i<=menu.num_rows; i++){
         Screen_SetCursor(0, i);
