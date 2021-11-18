@@ -7,6 +7,7 @@
 #include "../header/nokia.h"
 #include "../header/stepper.h"
 #include "../header/adc.h"
+#include "../header/menu.h"
 
 #define JOYSTICK_DEADZONE 400
 
@@ -16,6 +17,8 @@ typedef struct task {
     unsigned long elapsedTime;
     int (*TickFct)(int);
 } task_t;
+
+
 
 #define NUM_TASKS 4
 task_t tasks[NUM_TASKS];
@@ -41,7 +44,7 @@ unsigned char btn_down = 0x00;
 unsigned char btn_left = 0x00;
 unsigned char btn_right = 0x00;
 unsigned char btn_select = 0x00;
-menu_t current_menu = { "Menu          ", 4, { "Row1", "Row2", "Row3", "Row4"}, 1 };
+menu* current_menu;
 // ====== SHARED VARIABLES ======
 
 
@@ -103,7 +106,7 @@ int Screen_Tick(int state) {
         case Screen_Start:
             break;
         case Screen_Display:
-            Screen_DisplayMenu(current_menu);
+            Menu_DisplayMenu(current_menu);
             break;
     }
 
@@ -154,57 +157,69 @@ int Joystick_Tick(int state) {
 //  Inputs: btn_up btn_down btn_left btn_right btn_select
 //  Outputs: 
 // ====== Menu Machine ======
-enum Menu_States { Menu_Start, Menu_Idle, Menu_Left, Menu_Right, Menu_Up, Menu_Down } Menu_State;
+enum M_States { M_Start, M_Idle, M_Left, M_Right, M_Up, M_Down, M_Click } Menu_State;
 
-int Menu_Tick(int state) {
+int M_Tick(int state) {
     // Transition
     switch(state) {
-        case Menu_Start:
-            state = Menu_Idle;
+        case M_Start:
+            state = M_Idle;
             break;
-        case Menu_Idle:
-            if (btn_left && !btn_right && !btn_up && !btn_down) {
-                state = Menu_Left;
+        case M_Idle:
+            if (btn_select) {
+                current_menu = Menu_Click(current_menu);
+                state = M_Click;
+            } else if (btn_left && !btn_right && !btn_up && !btn_down) {
+                state = M_Left;
             } else if (!btn_left && btn_right && !btn_up && !btn_down) {
-                state = Menu_Right;
+                state = M_Right;
             } else if (!btn_left && !btn_right && btn_up && !btn_down) {
-                current_menu.selected_row--;
-                if (current_menu.selected_row == 0) current_menu.selected_row = current_menu.num_rows;
-                state = Menu_Up;
+
+                (*current_menu).selected_row--;
+                if ((*current_menu).selected_row == 0) (*current_menu).selected_row = (*current_menu).num_rows;
+
+                state = M_Up;
             } else if (!btn_left && !btn_right && !btn_up && btn_down) {
-                current_menu.selected_row++;
-                if (current_menu.selected_row == current_menu.num_rows+1) current_menu.selected_row = 1;
-                state = Menu_Down;
+
+                (*current_menu).selected_row++;
+                if ((*current_menu).selected_row == (*current_menu).num_rows+1) (*current_menu).selected_row = 1;
+
+                state = M_Down;
             }
             break;
-        case Menu_Left:
-            state = btn_left ? Menu_Left : Menu_Idle;
+        case M_Left:
+            state = btn_left ? M_Left : M_Idle;
             break;
-        case Menu_Right:
-            state = btn_right ? Menu_Right : Menu_Idle;
+        case M_Right:
+            state = btn_right ? M_Right : M_Idle;
             break;
-        case Menu_Up:
-            state = btn_up ? Menu_Up : Menu_Idle;
+        case M_Up:
+            state = btn_up ? M_Up : M_Idle;
             break;
-        case Menu_Down:
-            state = btn_down ? Menu_Down : Menu_Idle;
+        case M_Down:
+            state = btn_down ? M_Down : M_Idle;
+            break;
+        case M_Click:
+            state = btn_select ? M_Click : M_Idle;
             break;
     }
 
     // Actions
     switch(state) {
-        case Menu_Start:
-            state = Menu_Idle;
+        case M_Start:
+            state = M_Idle;
             break;
-        case Menu_Idle:
+        case M_Idle:
             break;
-        case Menu_Left:
+        case M_Left:
             break;
-        case Menu_Right:
+        case M_Right:
             break;
-        case Menu_Up:
+        case M_Up:
             break;
-        case Menu_Down:
+        case M_Down:
+            break;
+        case M_Click:
             break;
     }
 
@@ -230,7 +245,7 @@ int main(void) {
     tasks[i].TickFct = &Stepper_Tick;
     i++;
     tasks[i].state = Screen_Start;
-    tasks[i].period = 100;
+    tasks[i].period = 200;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &Screen_Tick;
     i++;
@@ -239,10 +254,10 @@ int main(void) {
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &Joystick_Tick;
     i++;
-    tasks[i].state = Menu_Start;
+    tasks[i].state = M_Start;
     tasks[i].period = 50;
     tasks[i].elapsedTime = 0;
-    tasks[i].TickFct = &Menu_Tick;
+    tasks[i].TickFct = &M_Tick;
 
     // Enable SPI
     SPI_MasterInit();
@@ -257,7 +272,9 @@ int main(void) {
     ADC_Init();
 
     Screen_WriteString(" Feesh Feeder ", 1, 0);
-    delay_ms(2000);
+    delay_ms(500);
+
+    current_menu = Menu_GetMainMenu();
 
     // Enable Interrupt for Task Scheduler
     TimerSet(timerPeriod);

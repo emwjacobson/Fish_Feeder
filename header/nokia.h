@@ -6,7 +6,7 @@
 #include "../header/spi.h"
 
 // https://github.com/carlosefr/pcd8544/blob/master/charset.cpp
-unsigned char charset[][5] = {
+const unsigned char charset[][5] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00 },  // 20 Space
     { 0x00, 0x00, 0x5f, 0x00, 0x00 },  // 21 !
     { 0x00, 0x07, 0x00, 0x07, 0x00 },  // 22 "
@@ -105,27 +105,9 @@ unsigned char charset[][5] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00 }   // 7f
 };
 
-// typedef struct menu {
-//     char title[16];
-//     unsigned char num_rows;
-//     char row1[16];
-//     char row2[16];
-//     char row3[16];
-//     char row4[16];
-//     char row5[16];
-//     unsigned char selected_row;
-// } menu_t;
-
-typedef struct menu {
-    char title[16];
-    unsigned char num_rows;
-    char row[5][16];
-    unsigned char selected_row;
-} menu_t;
-
 void Screen_SendData(unsigned char type, unsigned char data);
 void Screen_Clear();
-unsigned char* Screen_GetChar(unsigned char c);
+const unsigned char* Screen_GetChar(unsigned char c);
 void Screen_SetCursor(unsigned char x, unsigned char y);
 void Screen_WriteChar(unsigned char c, unsigned char underline, unsigned char inverted);
 void Screen_WriteString(char* str, unsigned char underline, unsigned char inverted);
@@ -155,7 +137,7 @@ void Screen_Init() {
 
     // Set some settings
     Screen_SendData(SCN_COMMAND, 0x21); // Set H=1
-    Screen_SendData(SCN_COMMAND, 0x13); // Set Bias
+    Screen_SendData(SCN_COMMAND, 0x13); // Set Bias 0001_0011
     Screen_SendData(SCN_COMMAND, 0x20); // Set H=0
     Screen_SendData(SCN_COMMAND, 0x40); // Set Y=0
     Screen_SendData(SCN_COMMAND, 0x80); // Set X=0
@@ -171,10 +153,9 @@ void Screen_WriteString(char* str, unsigned char underline, unsigned char invert
 }
 
 void Screen_WriteChar(unsigned char c, unsigned char underline, unsigned char inverted) {
-    unsigned char* cset = Screen_GetChar(c);
+    const unsigned char* cset = Screen_GetChar(c);
     for(int i=0; i<5; i++) {
-        if (underline) cset[i] = SetBit(cset[i], 7, 1);
-        Screen_SendData(SCN_DATA, inverted ? ~cset[i] : cset[i]);
+        Screen_SendData(SCN_DATA, inverted ? ~(underline ? cset[i] | 0x80 : cset[i]) : (underline ? cset[i] | 0x80 : cset[i]));
     }
 
     // Draw a blank col to space out letters
@@ -197,7 +178,7 @@ void Screen_Clear() {
     Screen_SendData(SCN_COMMAND, 0x80); // Set X=0
 }
 
-unsigned char* Screen_GetChar(unsigned char c) {
+const unsigned char* Screen_GetChar(unsigned char c) {
     return charset[c - 0x20];
 }
 
@@ -213,15 +194,6 @@ void Screen_SendData(unsigned char type, unsigned char data) {
 
     // Disable clocking
     SCN_PORT = SetBit(SCN_PORT, SCN_CE, 1);
-}
-
-void Screen_DisplayMenu(menu_t menu) {
-    Screen_Clear();
-    Screen_WriteString(menu.title, 1, 0);
-    for(int i=1; i<=menu.num_rows; i++){
-        Screen_SetCursor(0, i);
-        Screen_WriteString(menu.row[i-1], 0, menu.selected_row == i ? 1 : 0);
-    }
 }
 
 #endif
