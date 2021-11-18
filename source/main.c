@@ -56,11 +56,9 @@ menu* current_menu;
 enum Stepper_States { Stepper_Start, Stepper_Main } Stepper_State;
 
 int Stepper_Tick(int state) {
-    static unsigned char temp_stepper;
     // Transitions
     switch(state) {
         case Stepper_Start:
-            temp_stepper = 0;
             state = Stepper_Main;
             break;
         case Stepper_Main:
@@ -73,16 +71,6 @@ int Stepper_Tick(int state) {
         case Stepper_Start:
             break;
         case Stepper_Main:
-            temp_stepper++;
-            if (temp_stepper > 80) {
-                stepper_on = 0x01;
-                if (temp_stepper >= 100) {
-                    temp_stepper = 0;
-                }
-            } else {
-                stepper_on = 0x00;
-            }
-            
             if (stepper_on) {
                 Stepper_Enable();
                 Stepper_Step();
@@ -283,8 +271,8 @@ int main(void) {
     // Enable ADC
     ADC_Init();
 
-    Screen_WriteString(" Feesh Feeder ", 1, 0);
-    delay_ms(500);
+    // Screen_WriteString(" Feesh Feeder ", 1, 0);
+    // delay_ms(500);
 
     current_menu = Menu_GetMainMenu();
 
