@@ -2,12 +2,15 @@
 
 #include <stdlib.h>
 #include <avr/io.h>
+#include <stdio.h>
+#include "../header/utils.h"
 #include "../header/interrupt.h"
 #include "../header/spi.h"
 #include "../header/nokia.h"
 #include "../header/stepper.h"
 #include "../header/adc.h"
 #include "../header/menu.h"
+#include "../header/times.h"
 
 #define JOYSTICK_DEADZONE 400
 
@@ -18,12 +21,10 @@ typedef struct task {
     int (*TickFct)(int);
 } task_t;
 
-
-
-#define NUM_TASKS 4
+#define NUM_TASKS 5
 task_t tasks[NUM_TASKS];
 
-volatile unsigned char TimerFlag = 0;
+// volatile unsigned char TimerFlag = 0;
 const unsigned long timerPeriod = 1;
 
 void TimerISR() {
@@ -44,8 +45,38 @@ unsigned char btn_down = 0x00;
 unsigned char btn_left = 0x00;
 unsigned char btn_right = 0x00;
 unsigned char btn_select = 0x00;
-menu* current_menu;
+menu_t* current_menu;
 // ====== SHARED VARIABLES ======
+
+
+// ====== Time Machine ======
+//  Roles: This machine keeps track of the time of the system and coordinates time sensitive jobs
+//  Inputs: 
+//  Outputs: 
+// ====== Time Machine ======
+enum Time_States { Time_Start, Time_Spin } Time_State;
+
+int Time_Tick(int state) {
+    // Transitions
+    switch(state) {
+        case Time_Start:
+            state = Time_Spin;
+            break;
+        case Time_Spin:
+            state = Time_Spin;
+            break;
+    }
+
+    // Actions
+    switch(state) {
+        case Time_Start:
+            break;
+        case Time_Spin:
+            Time_IncSecond();
+            break;
+    }
+    return state;
+}
 
 
 // ====== Stepper Controller ======
@@ -72,6 +103,7 @@ int Stepper_Tick(int state) {
             break;
         case Stepper_Main:
             if (stepper_on) {
+                // Could honestly use PWM for this, but brings a level of complexity that I don't have time for
                 Stepper_Enable();
                 Stepper_Step();
             } else {
@@ -157,7 +189,7 @@ int Joystick_Tick(int state) {
 //  Inputs: btn_up btn_down btn_left btn_right btn_select
 //  Outputs: 
 // ====== Menu Machine ======
-enum M_States { M_Start, M_Idle, M_Left, M_Right, M_Up, M_Down, M_Click } Menu_State;
+enum M_States { M_Start, M_Idle, M_Left, M_Right, M_Up, M_Down, M_Click } M_State;
 
 int M_Tick(int state) {
     // Transition
@@ -239,6 +271,11 @@ int main(void) {
 
     // Setup all of the SMs
     unsigned char i = 0;
+    tasks[i].state = Time_Start;
+    tasks[i].period = 100;
+    tasks[i].elapsedTime = 0;
+    tasks[i].TickFct = &Time_Tick;
+    i++;
     tasks[i].state = Stepper_Start;
     tasks[i].period = 20;
     tasks[i].elapsedTime = 0;
@@ -270,6 +307,9 @@ int main(void) {
 
     // Enable ADC
     ADC_Init();
+
+    // Enable Time Module
+    Time_Init();
 
     // Screen_WriteString(" Feesh Feeder ", 1, 0);
     // delay_ms(500);
