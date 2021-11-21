@@ -16,6 +16,7 @@ typedef struct time {
 
 time_t current_time;
 time_t timers[NUM_TIMERS];
+unsigned char paused;
 
 void Time_Init() {
     while (!eeprom_is_ready()) { asm("nop"); };
@@ -31,6 +32,8 @@ void Time_Init() {
         if (timers[i].minute < 0) timers[i].minute = 0;
         if (timers[i].second < 0) timers[i].second = 0;
     }
+
+    paused = 0x00;
 }
 
 void Time_WriteEEPROM() {
@@ -38,7 +41,17 @@ void Time_WriteEEPROM() {
     eeprom_write_block(&timers, TIMERS_OFFSET, sizeof(time_t)*NUM_TIMERS);
 }
 
+void Time_PauseTime() {
+    paused = 0x01;
+}
+
+void Time_UnpauseTime() {
+    paused = 0x00;
+}
+
 void Time_IncSecond() {
+    if (paused == 0x01) return;
+
     if (current_time.second + 1 >= 60) {
         current_time.second = 0;
         if (current_time.minute + 1 >= 60) {
@@ -55,6 +68,20 @@ void Time_IncSecond() {
         Time_WriteEEPROM();
     } else {
         current_time.second++;
+    }
+}
+
+void Time_AddTime(unsigned char hour, unsigned char minute) {
+    current_time.hour += hour;
+    current_time.minute += minute;
+
+    while (current_time.minute >= 60) {
+        current_time.hour++;
+        current_time.minute = current_time.minute % 60;
+    }
+
+    if (current_time.hour >= 24) {
+        current_time.hour = current_time.hour % 24;
     }
 }
 

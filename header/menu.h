@@ -8,8 +8,9 @@
 #include "times.h"
 
 typedef enum HeaderType { HeaderNone, CurrentTime, TimerTime } HeaderType_t;
-typedef enum ActionType { ActionNone, ChangeMenu, IncTimer, DecTimer } ActionType_t;
+typedef enum ActionType { ActionNone, ChangeMenu, IncTimer, DecTimer, AddMinute, AddHour } ActionType_t;
 typedef enum LeaveAction { LeaveNone, LeaveSaveCurrent, LeaveSaveTimer } LeaveAction_t;
+typedef enum EnterAction { EnterNone, EnterPauseTime, EnterUnpauseTime } EnterAction_t;
 
 typedef struct row {
     char text[16];
@@ -21,6 +22,7 @@ typedef struct menu {
     int header_type;
     unsigned char timer_id;
     int leave_action;
+    int enter_action;
     char title[16];
     unsigned char num_rows;
     row_t row[5];
@@ -32,13 +34,14 @@ menu_t menus[] = {
         CurrentTime,
         0,
         LeaveNone,
+        EnterUnpauseTime,
         "     Menu     ",
         4,
         {
             { "Time 1", ChangeMenu, &menus[1] },
             { "Time 2", ChangeMenu, &menus[2] },
             { "Time 3", ChangeMenu, &menus[3] },
-            { "Set Time", ActionNone, (void *)0 }
+            { "Set Time", ChangeMenu, &menus[4] }
         },
         1
     },
@@ -46,6 +49,7 @@ menu_t menus[] = {
         TimerTime,
         1,
         LeaveSaveTimer,
+        EnterNone,
         "    Time 1    ",
         3,
         { 
@@ -59,6 +63,7 @@ menu_t menus[] = {
         TimerTime,
         2,
         LeaveSaveTimer,
+        EnterNone,
         "    Time 2    ",
         3,
         { 
@@ -72,11 +77,26 @@ menu_t menus[] = {
         TimerTime,
         3,
         LeaveSaveTimer,
+        EnterNone,
         "    Time 3    ",
         3,
         { 
             { "      Up      ", IncTimer, (void *)0 },
             { "     Down     ", DecTimer, (void *)0 },
+            { "     Back     ", ChangeMenu, &menus[0] },
+        },
+        1
+    },
+    {
+        CurrentTime,
+        0,
+        LeaveSaveCurrent,
+        EnterPauseTime,
+        "   Set Time   ",
+        3,
+        { 
+            { "   +1 Hour    ", AddHour, (void *)0 },
+            { "  +1 Minute   ", AddMinute, (void *)0 },
             { "     Back     ", ChangeMenu, &menus[0] },
         },
         1
@@ -135,20 +155,35 @@ menu_t* Menu_Click(menu_t* menu) {
                     break;
                 case LeaveSaveCurrent:
                 case LeaveSaveTimer:
-                    // Time_WriteEEPROM();
+                    Time_WriteEEPROM();
                     break;
             }
             
             menu = (menu_t*)((*menu).row[menu->selected_row-1].action_data);
             menu->selected_row = 1;
 
-            // TODO: Do EnterAction
+            switch (menu->enter_action) {
+                case EnterNone:
+                    break;
+                case EnterPauseTime:
+                    Time_PauseTime();
+                    break;
+                case EnterUnpauseTime:
+                    Time_UnpauseTime();
+                    break;
+            }
             break;
         case IncTimer:
             Time_IncrementTime(menu->timer_id);
             break;
         case DecTimer:
             Time_DecrementTime(menu->timer_id);
+            break;
+        case AddMinute:
+            Time_AddTime(0, 1);
+            break;
+        case AddHour:
+            Time_AddTime(1, 0);
             break;
     }
     return menu;
