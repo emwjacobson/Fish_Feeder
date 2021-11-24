@@ -154,8 +154,10 @@ menu_t* Menu_Click(menu_t* menu) {
                     // Do nothing
                     break;
                 case LeaveSaveCurrent:
+                    Time_WriteCurrentTime();
+                    break;
                 case LeaveSaveTimer:
-                    Time_WriteEEPROM();
+                    Time_WriteTimers();
                     break;
             }
             

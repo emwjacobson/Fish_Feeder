@@ -36,8 +36,11 @@ void Time_Init() {
     paused = 0x00;
 }
 
-void Time_WriteEEPROM() {
+void Time_WriteCurrentTime() {
     eeprom_write_block(&current_time, TIME_OFFSET, sizeof(time_t));
+}
+
+void Time_WriteTimers() {
     eeprom_write_block(&timers, TIMERS_OFFSET, sizeof(time_t)*NUM_TIMERS);
 }
 
@@ -65,7 +68,7 @@ void Time_IncSecond() {
             current_time.minute++;
         }
         // Save the time every minute
-        Time_WriteEEPROM();
+        Time_WriteCurrentTime();
     } else {
         current_time.second++;
     }
