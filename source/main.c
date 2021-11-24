@@ -39,13 +39,14 @@ void TimerISR() {
 }
 
 // ====== SHARED VARIABLES ======
-unsigned char stepper_on = 0x00;
+// unsigned char stepper_on = 0x00;
 unsigned char btn_up = 0x00;
 unsigned char btn_down = 0x00;
 unsigned char btn_left = 0x00;
 unsigned char btn_right = 0x00;
 unsigned char btn_select = 0x00;
 menu_t* current_menu;
+unsigned char num_steps = 0;
 // ====== SHARED VARIABLES ======
 
 
@@ -57,6 +58,9 @@ menu_t* current_menu;
 enum Time_States { Time_Start, Time_Spin } Time_State;
 
 int Time_Tick(int state) {
+    time_t* time;
+    time_t* cur_time;
+
     // Transitions
     switch(state) {
         case Time_Start:
@@ -73,6 +77,14 @@ int Time_Tick(int state) {
             break;
         case Time_Spin:
             Time_IncSecond();
+            cur_time = Time_GetCurrentTime();
+            for (unsigned char i=0; i<NUM_TIMERS; i++) {
+                time = Time_GetTimer(i);
+                // If the time is the same, then run the stepper
+                if (cur_time->hour == time->hour && cur_time->minute == time->minute && cur_time->second == 0) {
+                    num_steps = 100;
+                }
+            }
             break;
     }
     return state;
@@ -102,7 +114,8 @@ int Stepper_Tick(int state) {
         case Stepper_Start:
             break;
         case Stepper_Main:
-            if (stepper_on) {
+            if (num_steps > 0) {
+                num_steps--;
                 // Could honestly use PWM for this, but brings a level of complexity that I don't have time for
                 Stepper_Enable();
                 Stepper_Step();
@@ -272,7 +285,7 @@ int main(void) {
     // Setup all of the SMs
     unsigned char i = 0;
     tasks[i].state = Time_Start;
-    tasks[i].period = 100;
+    tasks[i].period = 10;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &Time_Tick;
     i++;
